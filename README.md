@@ -1,125 +1,54 @@
+# Project Architecture Guide
 
-# SwiftUI Coordinator Navigation System
+This document provides a high-level overview of the project's structure and the core architectural patterns used. The goal is to create a system that is modular, scalable, and easy to maintain.
 
-This document provides a guide on how to use the state-driven Coordinator navigation system in this project. This architecture is designed to be stable, scalable, and testable, providing a robust solution for managing complex navigation flows in SwiftUI, especially for apps supporting iOS 14+.
+---
 
-## Core Concepts
+## 🏛️ Core Architectural Patterns
 
-The navigation system is built upon a few key components that work together to manage the application's state and UI flow.
+The architecture is built on a few key patterns that work together to create a clear separation of concerns.
 
-- **AppStateManager**: The global "source of truth." It holds the high-level state of the app (e.g., .unauthorized, .authenticated) and drives which major flow is currently active.
+* **State-Driven App Flow**
+    * The **`AppStateManager`** is the single source of truth for the app's global state (e.g., `.unauthenticated`, `.authenticated`).
+    * The root **`AppCoordinator`** observes this state and is responsible for presenting the correct feature flow (e.g., showing the `AuthenticationCoordinator` or the `DashboardCoordinator`).
 
-- **AppCoordinator**: The root coordinator. It observes the AppStateManager and swaps child coordinators in and out (e.g., showing AuthenticationCoordinator for the login flow, or DashboardCoordinator for the main app).
+* **Hierarchical Coordinator Pattern**
+    * **Coordinators** are objects that manage navigation logic for a specific user flow. They are the only objects that know how to create and present views.
+    * This pattern is hierarchical. A parent coordinator (like `DashboardCoordinator`) can manage and present child coordinators (like `HomeCoordinator` or `ProfileCoordinator`), each responsible for a sub-flow.
 
-- **Feature Coordinators (AuthenticationCoordinator, DashboardCoordinator)**: Each coordinator manages a self-contained feature or user flow. It is responsible for creating views and handling navigation within that flow.
+* **Factory-per-Feature (Dependency Injection)**
+    * A **Factory** is an object responsible for creating a view and injecting all of its dependencies (like ViewModels and UseCases).
+    * Each feature (e.g., `Login`, `Home`, `Profile`) has its own dedicated Factory.
+    * A top-level **`AppFactory`** acts as the composition root, creating and holding instances of all the feature-specific factories. This keeps dependency management clean and centralized.
 
-- **Router**: An ObservableObject owned by a feature coordinator. It holds the navigation stack for that flow as an array of destinations (path). All navigation actions (push, pop) are performed by manipulating this array.
+* **MVVM + Use Cases**
+    * The app follows a clear data flow:
+        1.  **View**: The UI layer; it's simple and only communicates with the ViewModel.
+        2.  **ViewModel**: Manages the state for the View and contains presentation logic.
+        3.  **UseCase**: Encapsulates a single piece of business logic (e.g., `GetUserProfileUseCase`). It's called by the ViewModel.
+        4.  **Repository**: The data layer, responsible for fetching data from a remote or local source.
 
-- **NavigationControllerHost**: A crucial bridge that wraps a UIKit UINavigationController, allowing us to leverage its robust navigation capabilities (like push/pop animations and gesture handling) within a SwiftUI environment. It observes a Router and automatically updates its view controller stack whenever the path array changes.
-## How to Add a New Screen to a Flow
+---
 
-Here is a step-by-step guide to adding a new "Settings" screen to the authenticated dashboard flow.
+## 📁 Folder Structure Overview
 
-**Step 1:** Define the Destination
-First, declare the new screen as a destination. Open DashboardCoordinator.swift and add a new case to the DashboardDestination enum.
+The project is organized into modules to enforce separation and make the codebase easier to navigate.
 
-```swift
-// In DashboardCoordinator.swift
+* **`LearningApp/`**
+    * The main application target. This is the **Composition Root** where the `AppFactory`, `AppStateManager`, and `AppCoordinator` are initialized.
 
-private enum DashboardDestination: Navigatable {
-    case home
-    case profile
-    case settings // 👈 Add the new destination case
-    var id: String { String(describing: self) }
-}
-```
+* **`Features/`**
+    * Contains all the user-facing features, with each feature in its own subfolder (e.g., `Authenticated`, `Unauthenticated`).
+    * **`Features/{FeatureName}/DI/`**: Contains the `Factory` for that feature.
+    * **`Features/{FeatureName}/Domain/`**: Contains the `UseCases` for that feature.
+    * **`Features/{FeatureName}/Navigation/`**: Contains the `Coordinator` for that feature.
+    * **`Features/{FeatureName}/Presentation/`**: Contains the `Views` and `ViewModels`.
 
-**Step 2:** Create the SwiftUI View
-Create a new SwiftUI view file named SettingsView.swift. Following our architecture, this should be a "dumb" view that only presents UI and calls closures for any actions.
+* **`Navigation/`**
+    * Contains the reusable, feature-agnostic navigation components like the base `Coordinator` protocol, the `Router`, and the `NavigationControllerHost`.
 
-```swift
-// SettingsView.swift
+* **`Network/`**
+    * The data layer, containing `Repository` implementations that handle API communication.
 
-import SwiftUI
-
-struct SettingsView: View {
-    var onDoneTapped: () -> Void
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Settings").font(.largeTitle)
-            Button("Done", action: onDoneTapped)
-        }
-        .navigationTitle("Settings")
-    }
-}
-```
-
-**Step 3:** Teach the Coordinator How to Build the View
-Now, open DashboardCoordinator.swift and update the makeView(for:) function to handle the new .settings case. Here, you will instantiate SettingsView and provide the implementation for its onDoneTapped action.
-
-```swift
-// In DashboardCoordinator.swift
-
-@ViewBuilder
-private func makeView(for destination: DashboardDestination) -> some View {
-    switch destination {
-    case .home:
-        HomeView(
-            onProfileTapped: { self.router.push(.profile) },
-            // We will add the action to navigate to settings here later
-            onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
-        )
-    case .profile:
-        ProfileView(
-            onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
-        )
-    // 👇 Add the new case to the switch statement
-    case .settings:
-        SettingsView(
-            // When "Done" is tapped, we pop the current view from the stack.
-            onDoneTapped: { self.router.pop() }
-        )
-    }
-}
-```
-
-**Step 4:** Trigger the Navigation
-Finally, trigger the navigation from an existing screen. We'll add a "Go to Settings" button in HomeView.
-
-First, update HomeView.swift to accept a new action closure.
-
-```swift
-// In HomeView.swift
-
-struct HomeView: View {
-    var onProfileTapped: () -> Void
-    var onSettingsTapped: () -> Void // 👈 Add new action
-    var onLogoutTapped: () -> Void
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Home").font(.largeTitle)
-            Button("Go to Profile", action: onProfileTapped)
-            Button("Go to Settings", action: onSettingsTapped) // 👈 Add new button
-            Button("Log Out", action: onLogoutTapped)
-        }
-        .navigationTitle("Home")
-    }
-}
-```
-
-Then, update the DashboardCoordinator to provide this new action when it creates the HomeView.
-
-```swift
-// In DashboardCoordinator.swift's makeView(for:) function
-
-case .home:
-    HomeView(
-        onProfileTapped: { self.router.push(.profile) },
-        onSettingsTapped: { self.router.push(.settings) }, // 👈 Provide the implementation
-        onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
-    )
-```
-
-That's it! The navigation is now fully wired up.
+* **`Core/`, `CoreEntity/`, `CommonUI/`**
+    * These are foundational modules for shared code, data models (DTOs), and reusable UI components, respectively. They have no dependencies on any feature modules.
