@@ -120,6 +120,6 @@ case .home:
         onSettingsTapped: { self.router.push(.settings) }, // 👈 Provide the implementation
         onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
     )
-```swift
+```
 
 That's it! The navigation is now fully wired up.
