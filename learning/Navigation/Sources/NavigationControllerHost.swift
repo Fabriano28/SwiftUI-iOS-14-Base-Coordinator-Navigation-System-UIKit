@@ -28,6 +28,8 @@ makeCoordinator(): Creates the delegate object that listens for navigation event
 import SwiftUI
 import UIKit
 
+// This is the bridge between SwiftUI and UIKit's UINavigationController.
+// It keeps the UIKit navigation stack in sync with the SwiftUI Router's `path`.
 struct NavigationControllerHost<Destination: Navigatable, Content: View>: UIViewControllerRepresentable {
     @ObservedObject var router: Router<Destination>
     private let viewBuilder: (Destination) -> Content
@@ -44,6 +46,8 @@ struct NavigationControllerHost<Destination: Navigatable, Content: View>: UIView
     }
 
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
+        // This logic now only acts when a new screen is pushed programmatically.
+        // It ignores pops, letting the delegate handle them.
         if uiViewController.viewControllers.count < router.path.count {
             let newViewControllers = router.path.map { destination -> UIViewController in
                 let hostingController = UIHostingController(rootView: viewBuilder(destination))
@@ -66,11 +70,17 @@ struct NavigationControllerHost<Destination: Navigatable, Content: View>: UIView
         }
 
         func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
-            guard let didShowDestinationTag = navigationController.viewControllers.last?.view.tag else { return }
+            guard let didShowDestinationTag = navigationController.viewControllers.last?.view.tag else {
+                // If the user pops all the way back to the root, the path should be empty.
+                if navigationController.viewControllers.isEmpty {
+                    router.path = []
+                }
+                return
+            }
             
+            // Sync the SwiftUI state with the UIKit state after a pop gesture.
             if router.path.count > navigationController.viewControllers.count {
                 if let lastMatchingIndex = router.path.lastIndex(where: { $0.hashValue == didShowDestinationTag }) {
-                    // This correctly trims the SwiftUI state to match what UIKit is showing.
                     router.path = Array(router.path.prefix(lastMatchingIndex + 1))
                 }
             }

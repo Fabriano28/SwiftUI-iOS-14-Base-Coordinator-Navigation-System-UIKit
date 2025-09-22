@@ -31,8 +31,11 @@ pop(): Removes the last destination from the path, popping the current screen of
 
 import SwiftUI
 
+// A protocol that all navigable destinations must conform to.
 protocol Navigatable: Hashable, Identifiable {}
 
+// An ObservableObject that holds the navigation stack for a given coordinator.
+// The `path` is the source of truth for the navigation state.
 @MainActor
 final class Router<Destination: Navigatable>: ObservableObject {
     @Published var path: [Destination] = []
@@ -44,4 +47,10 @@ final class Router<Destination: Navigatable>: ObservableObject {
     func pop() {
         _ = path.popLast()
     }
+    
+    func popToRoot() {
+        path.removeAll()
+    }
 }
+
+

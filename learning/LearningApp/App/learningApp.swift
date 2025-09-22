@@ -29,12 +29,17 @@ import SwiftUI
 struct learningApp: App {
     @StateObject private var appStateManager = AppStateManager()
     @State private var appCoordinator: AppCoordinator?
+    private let appFactory = AppFactory() // Create the single AppFactory
 
     var body: some Scene {
         WindowGroup {
             WindowAccessor { window in
                 if appCoordinator == nil {
-                    self.appCoordinator = AppCoordinator(window: window, appStateManager: appStateManager)
+                    self.appCoordinator = AppCoordinator(
+                        window: window,
+                        appStateManager: appStateManager,
+                        factory: appFactory // Pass the AppFactory
+                    )
                 }
             }
             .ignoresSafeArea()
@@ -42,6 +47,7 @@ struct learningApp: App {
     }
 }
 
+// Helper view to get access to the underlying UIWindow of a scene
 struct WindowAccessor: UIViewControllerRepresentable {
     var callback: (UIWindow) -> Void
 

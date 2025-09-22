@@ -19,6 +19,8 @@ start(): A function that must be implemented by any conforming type. This functi
 
 import SwiftUI
 
+// The base protocol for all coordinators.
+// Each coordinator is responsible for creating and returning its starting view.
 protocol Coordinator {
     @MainActor func start() -> AnyView
 }
