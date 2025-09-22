@@ -41,16 +41,19 @@ struct HomeView: View {
 import SwiftUI
 
 struct LoginView: View {
-    var onLoginTapped: () -> Void
-    var onForgotPasswordTapped: () -> Void
+    var navigationDelegate: LoginViewNavigationDelegate
 
     var body: some View {
         VStack(spacing: 20) {
             Text("Login").font(.largeTitle)
-            Button("Log In", action: onLoginTapped)
-            Button("Forgot Password?", action: onForgotPasswordTapped)
+            Button("Log In") {
+                navigationDelegate.loginViewDidSucceed()
+            }
+            Button("Forgot Password?") {
+                navigationDelegate.loginViewDidTapForgotPassword()
+            }
         }
         .navigationTitle("Welcome")
-        .navigationBarTitleDisplayMode(.inline)
+        // The .navigationBarHidden(true) modifier that was here has been removed.
     }
 }

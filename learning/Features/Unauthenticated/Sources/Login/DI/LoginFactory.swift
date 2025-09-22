@@ -1,16 +1,20 @@
-//  Features/Unauthenticated/Sources/Login/DI/LoginFactory.swift
+//
+//  LoginFactory.swift
+//  learning
+//
+//  Created by Farrel Brian Rafi on 22/09/25.
+//
+
+// Features/Unauthenticated/DI/LoginFactory.swift
 
 import SwiftUI
 
 @MainActor
-class LoginFactory {
-    func makeLoginView(
-        onLoginSuccess: @escaping () -> Void,
-        onForgotPasswordTapped: @escaping () -> Void
-    ) -> some View {
-        LoginView(
-            onLoginSuccess: onLoginSuccess,
-            onForgotPasswordTapped: onForgotPasswordTapped
+class LoginFactory: LoginFactoryProtocol { // BARE MINIMUM CHANGE: Conform to protocol.
+    // BARE MINIMUM CHANGE: Update method signature to match protocol.
+    func makeLoginView(navigationDelegate: LoginViewNavigationDelegate) -> AnyView {
+        AnyView(
+            LoginView(navigationDelegate: navigationDelegate)
         )
     }
 }

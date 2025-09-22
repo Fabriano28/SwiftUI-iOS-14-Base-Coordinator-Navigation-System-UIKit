@@ -5,34 +5,26 @@
 //  Created by Farrel Brian Rafi on 22/09/25.
 //
 
-
-//  Features/Authenticated/Sources/Profile/DI/ProfileFactory.swift
-
 import SwiftUI
 
 @MainActor
-class ProfileFactory {
+class ProfileFactory: ProfileFactoryProtocol { // BARE MINIMUM CHANGE: Conform to protocol.
     private let repository: MockDataRepository
+    init(repository: MockDataRepository) { self.repository = repository }
 
-    init(repository: MockDataRepository) {
-        self.repository = repository
-    }
-
-    func makeProfileView(
-        onSettingsTapped: @escaping (SettingsData) -> Void,
-        onLogoutTapped: @escaping () -> Void
-    ) -> some View {
+    // BARE MINIMUM CHANGE: Update method signatures.
+    func makeProfileView(navigationDelegate: ProfileViewNavigationDelegate) -> AnyView {
         let useCase = GetUserProfileUseCase(repository: repository)
         let viewModel = ProfileViewModel(getUserProfileUseCase: useCase)
-        return ProfileView(
-            viewModel: viewModel,
-            onSettingsTapped: onSettingsTapped,
-            onLogoutTapped: onLogoutTapped
+        return AnyView(
+            ProfileView(viewModel: viewModel, navigationDelegate: navigationDelegate)
         )
     }
 
-    func makeSettingsView(initialData: SettingsData) -> some View {
+    func makeSettingsView(initialData: SettingsData) -> AnyView { // 👈 Simplified
         let viewModel = SettingsViewModel(initialData: initialData)
-        return SettingsView(viewModel: viewModel)
+        return AnyView(
+            SettingsView(viewModel: viewModel)
+        )
     }
 }

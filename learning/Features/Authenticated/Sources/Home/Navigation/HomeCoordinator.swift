@@ -5,24 +5,22 @@
 //  Created by Farrel Brian Rafi on 22/09/25.
 //
 
-
 import SwiftUI
 
-// CHILD coordinator for the Home tab.
-// It manages all navigation within this specific tab.
 private enum HomeDestination: Navigatable {
     case home
     var id: String { String(describing: self) }
 }
 
 @MainActor
-class HomeCoordinator: Coordinator {
+class HomeCoordinator: Coordinator, HomeViewNavigationDelegate {
     private let router = Router<HomeDestination>()
     private let appStateManager: AppStateManager
-    private let repository = MockDataRepository()
+    private let factory: HomeFactoryProtocol
 
-    init(appStateManager: AppStateManager) {
+    init(appStateManager: AppStateManager, factory: HomeFactoryProtocol) {
         self.appStateManager = appStateManager
+        self.factory = factory
     }
 
     func start() -> AnyView {
@@ -38,14 +36,12 @@ class HomeCoordinator: Coordinator {
     private func makeView(for destination: HomeDestination) -> some View {
         switch destination {
         case .home:
-            // The coordinator creates the entire MVVM stack for the view
-            let getHomeDataUseCase = GetHomeDataUseCase(repository: repository)
-            let viewModel = HomeViewModel(getHomeDataUseCase: getHomeDataUseCase)
-            HomeView(
-                viewModel: viewModel,
-                onLogoutTapped: { self.appStateManager.setState(to: .unauthenticated) }
-            )
+            factory.makeHomeView(navigationDelegate: self)
         }
     }
+    
+    // MARK: - HomeViewNavigationDelegate
+    func homeViewDidTapLogout() {
+        appStateManager.setState(to: .unauthenticated)
+    }
 }
-

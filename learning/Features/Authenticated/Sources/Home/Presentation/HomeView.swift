@@ -41,15 +41,23 @@ struct HomeView: View {
 import SwiftUI
 
 struct HomeView: View {
-    var onProfileTapped: () -> Void
-    var onLogoutTapped: () -> Void
+    @StateObject var viewModel: HomeViewModel
+    // BARE MINIMUM CHANGE: Replaced closure with the delegate protocol.
+    var navigationDelegate: HomeViewNavigationDelegate
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Home").font(.largeTitle)
-            Button("Go to Profile", action: onProfileTapped)
-            Button("Log Out", action: onLogoutTapped)
+            Text(viewModel.welcomeMessage)
+                .font(.largeTitle)
+                .multilineTextAlignment(.center)
+            
+            Button("Log Out") {
+                // BARE MINIMUM CHANGE: Call the delegate method.
+                navigationDelegate.homeViewDidTapLogout()
+            }
         }
+        .padding()
         .navigationTitle("Home")
+        .onAppear { viewModel.onAppear() }
     }
 }

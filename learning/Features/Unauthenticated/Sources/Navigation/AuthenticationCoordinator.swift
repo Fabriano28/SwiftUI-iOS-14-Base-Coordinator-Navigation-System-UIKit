@@ -39,36 +39,41 @@ private enum AuthDestination: Navigatable {
 }
 
 @MainActor
-class AuthenticationCoordinator: Coordinator {
+class AuthenticationCoordinator: Coordinator, LoginViewNavigationDelegate {
     private let router = Router<AuthDestination>()
     private let appStateManager: AppStateManager
+    private let loginFactory: LoginFactoryProtocol
 
-    init(appStateManager: AppStateManager) {
+    init(appStateManager: AppStateManager, loginFactory: LoginFactoryProtocol) {
         self.appStateManager = appStateManager
+        self.loginFactory = loginFactory
     }
 
     func start() -> AnyView {
         router.push(.login)
-        
         return AnyView(
             NavigationControllerHost(router: router) { destination in
                 self.makeView(for: destination)
             }
-            .ignoresSafeArea()
         )
     }
-    
+
     @ViewBuilder
     private func makeView(for destination: AuthDestination) -> some View {
         switch destination {
         case .login:
-            LoginView(
-                onLoginTapped: { self.appStateManager.setState(to: .authenticated) },
-                onForgotPasswordTapped: { self.router.push(.forgotPassword) }
-            )
+            loginFactory.makeLoginView(navigationDelegate: self)
         case .forgotPassword:
-            // Pass the pop action to the view
-            ForgotPasswordView(onBackTapped: { self.router.pop() })
+            ForgotPasswordView()
         }
+    }
+    
+    // MARK: - LoginViewNavigationDelegate
+    func loginViewDidSucceed() {
+        appStateManager.setState(to: .authenticated)
+    }
+    
+    func loginViewDidTapForgotPassword() {
+        router.push(.forgotPassword)
     }
 }

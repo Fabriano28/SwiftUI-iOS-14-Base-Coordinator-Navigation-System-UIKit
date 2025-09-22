@@ -40,36 +40,38 @@ private enum DashboardDestination: Navigatable {
 
 @MainActor
 class DashboardCoordinator: Coordinator {
-    private let router = Router<DashboardDestination>()
     private let appStateManager: AppStateManager
     
-    init(appStateManager: AppStateManager) {
+    // It holds references to its child coordinators
+    private var homeCoordinator: HomeCoordinator
+    private var profileCoordinator: ProfileCoordinator
+
+    init(
+        appStateManager: AppStateManager,
+        homeFactory: HomeFactoryProtocol,
+        profileFactory: ProfileFactoryProtocol
+    ) {
         self.appStateManager = appStateManager
-    }
-    
-    func start() -> AnyView {
-        router.push(.home)
         
-        return AnyView(
-            NavigationControllerHost(router: router) { destination in
-                self.makeView(for: destination)
-            }
-            .ignoresSafeArea()
+        // The child coordinators are initialized with their own specific factories
+        self.homeCoordinator = HomeCoordinator(
+            appStateManager: appStateManager,
+            factory: homeFactory
+        )
+        self.profileCoordinator = ProfileCoordinator(
+            appStateManager: appStateManager,
+            factory: profileFactory
         )
     }
-    
-    @ViewBuilder
-    private func makeView(for destination: DashboardDestination) -> some View {
-        switch destination {
-        case .home:
-            HomeView(
-                onProfileTapped: { self.router.push(.profile) },
-                onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
+
+    func start() -> AnyView {
+        // The root view for this coordinator is the TabView container,
+        // which gets its views from the child coordinators.
+        return AnyView(
+            AuthenticatedRootView(
+                homeView: homeCoordinator.start(),
+                profileView: profileCoordinator.start()
             )
-        case .profile:
-            ProfileView(
-                onLogoutTapped: { self.appStateManager.setState(to: .unauthorized) }
-            )
-        }
+        )
     }
 }

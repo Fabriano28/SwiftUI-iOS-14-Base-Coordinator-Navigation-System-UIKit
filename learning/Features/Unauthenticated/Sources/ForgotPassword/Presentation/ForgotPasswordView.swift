@@ -41,10 +41,14 @@ struct HomeView: View {
 import SwiftUI
 
 struct ForgotPasswordView: View {
-    var onBackTapped: () -> Void
-    
     var body: some View {
-        Text("Forgot Password").font(.largeTitle)
-            .navigationTitle("Reset Password")
+        VStack {
+            Text("Forgot Password").font(.largeTitle)
+            Text("Password recovery instructions would go here.")
+                .multilineTextAlignment(.center)
+                .padding()
+        }
+        .navigationTitle("Recover Password")
+        // The default back button will now appear automatically
     }
 }

@@ -7,15 +7,14 @@
 
 import Foundation
 
-// Represents the main user object
 struct User: Identifiable {
     let id: UUID
     let name: String
     let email: String
 }
 
-// Represents data that might be passed to the settings screen
-struct SettingsData {
+// BARE MINIMUM CHANGE: Make the struct conform to Hashable.
+struct SettingsData: Hashable {
     var notificationsEnabled: Bool
     var theme: String
 }

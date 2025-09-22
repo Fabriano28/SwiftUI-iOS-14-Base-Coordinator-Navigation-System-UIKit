@@ -5,39 +5,39 @@
 //  Created by Farrel Brian Rafi on 22/09/25.
 //
 
-
 import SwiftUI
 
-// CHILD coordinator for the Profile tab.
 private enum ProfileDestination: Navigatable {
     case profile
-    case settings(data: SettingsData) // We can pass data to destinations
-    
+    case settings(data: SettingsData)
     var id: String {
         switch self {
         case .profile: return "profile"
         case .settings: return "settings"
         }
     }
-    
-    // Conform to Hashable
+    static func == (lhs: ProfileDestination, rhs: ProfileDestination) -> Bool {
+        switch (lhs, rhs) {
+        case (.profile, .profile): return true
+        case let (.settings(lhsData), .settings(rhsData)): return lhsData == rhsData
+        default: return false
+        }
+    }
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-    }
-    
-    static func == (lhs: ProfileDestination, rhs: ProfileDestination) -> Bool {
-        lhs.id == rhs.id
+        if case .settings(let data) = self { hasher.combine(data) }
     }
 }
 
 @MainActor
-class ProfileCoordinator: Coordinator {
+class ProfileCoordinator: Coordinator, ProfileViewNavigationDelegate {
     private let router = Router<ProfileDestination>()
     private let appStateManager: AppStateManager
-    private let repository = MockDataRepository()
+    private let factory: ProfileFactoryProtocol
 
-    init(appStateManager: AppStateManager) {
+    init(appStateManager: AppStateManager, factory: ProfileFactoryProtocol) {
         self.appStateManager = appStateManager
+        self.factory = factory
     }
 
     func start() -> AnyView {
@@ -53,20 +53,17 @@ class ProfileCoordinator: Coordinator {
     private func makeView(for destination: ProfileDestination) -> some View {
         switch destination {
         case .profile:
-            let useCase = GetUserProfileUseCase(repository: repository)
-            let viewModel = ProfileViewModel(getUserProfileUseCase: useCase)
-            ProfileView(
-                viewModel: viewModel,
-                onSettingsTapped: { settingsData in
-                    self.router.push(.settings(data: settingsData))
-                },
-                onLogoutTapped: { self.appStateManager.setState(to: .unauthenticated) }
-            )
-        
+            factory.makeProfileView(navigationDelegate: self)
         case .settings(let data):
-            let viewModel = SettingsViewModel(initialData: data)
-            SettingsView(viewModel: viewModel)
+            factory.makeSettingsView(initialData: data)
         }
     }
-}
 
+    // MARK: - ProfileViewNavigationDelegate
+    func profileViewDidTapSettings(with settingsData: SettingsData) {
+        router.push(.settings(data: settingsData))
+    }
+    func profileViewDidTapLogout() {
+        appStateManager.setState(to: .unauthenticated)
+    }
+}
