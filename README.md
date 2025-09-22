@@ -10,8 +10,8 @@ The patterns implemented here are based on the principles of state-driven naviga
 
 This repository uses different branches to hold detailed documentation. Please check out the relevant branch to learn more about a specific topic.
 
-* **[➡️ Go to the Architecture Guide](architecture-guide)**
+* **[➡️ Go to the Architecture Guide](https://github.com/Fabriano28/SwiftUI-iOS-14-Base-Coordinator-Navigation-System-UIKit/tree/architecture-guide)**
     * *A high-level overview of the project structure, folder responsibilities, and the core architectural patterns like Factories, Coordinators, and MVVM+Use Cases.*
 
-* **[➡️ Go to the Coordinator Navigation Guide](coordinator-navigation-guide)**
+* **[➡️ Go to the Coordinator Navigation Guide](https://github.com/Fabriano28/SwiftUI-iOS-14-Base-Coordinator-Navigation-System-UIKit/tree/coordinator-navigation-guide)**
     * *A practical, step-by-step tutorial on how to add a new screen to an existing navigation flow using the Coordinator pattern.*
